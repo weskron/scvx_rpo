@@ -27,24 +27,24 @@ TODO: Should the trajectory history include propagation? I think no but I need t
 ## Epics and Issues
 Each issue issue can be copied into a new github issue. 
 
-Epic A — Core State Classes
-[ ] A1. Define SpacecraftState — fields, constructors (Keplerian / ECEF)
-[ ] A2. Keplerian ↔ ECI/ECEF conversion + round-trip tests
-[ ] A3. Nonlinear 6-DOF relative motion propagation in ECEF
-[ ] A4. TrajectoryHistory class — efficient storage + inherits state
-[ ] A5. Plotting methods on TrajectoryHistory
+### Epic A — Core State Classes
+- [ ] A1. Define SpacecraftState — fields, constructors (Keplerian / ECEF)
+- [ ] A2. Keplerian ↔ ECI/ECEF conversion + round-trip tests
+- [ ] A3. Nonlinear 6-DOF relative motion propagation in ECEF
+- [ ] A4. TrajectoryHistory class — efficient storage + inherits state
+- [ ] A5. Plotting methods on TrajectoryHistory
 
-Epic B — Reference Trajectory Generation
-[ ] B1. Define reference trajectory generator interface
-[ ] B2. Implement reference trajectory generator
-[ ] B3. Tests: feasibility + boundary conditions
+### Epic B — Reference Trajectory Generation
+- [ ] B1. Define reference trajectory generator interface
+- [ ] B2. Implement reference trajectory generator
+- [ ] B3. Tests: feasibility + boundary conditions
 
-Epic C — Convex Optimization Loop
-[ ] C1. Refactor opt loop to consume SpacecraftState/reference trajectories
-[ ] C2. Constraint diagnostics tool (the thing you actually needed last time)
-[ ] C3. Regression tests: known-good scenario stays satisfied
+### Epic C — Convex Optimization Loop
+- [ ] C1. Refactor opt loop to consume SpacecraftState/reference trajectories
+- [ ] C2. Constraint diagnostics tool (the thing you actually needed last time)
+- [ ] C3. Regression tests: known-good scenario stays satisfied
 
-Epic D — Testing & CI Infrastructure
-[ ] D1. tests/ structure + pytest config
-[ ] D2. GitHub Actions CI workflow
-[ ] D3. (optional) coverage reporting badge
+### Epic D — Testing & CI Infrastructure
+- [ ] D1. tests/ structure + pytest config
+- [ ] D2. GitHub Actions CI workflow
+- [ ] D3. (optional) coverage reporting badge
