@@ -1,4 +1,6 @@
 import numpy as np
+import math
+
 class KeplerianElements:
     def __init__(self, semi_major_axis: float, eccentricity: float, inclination: float, raan: float, argp: float, nu: float = None, mean_anomaly: float = None):
         self.semi_major_axis = semi_major_axis   # m
@@ -35,7 +37,6 @@ def true_to_mean_anomaly(nu, eccentricity):
     eccentric_anomaly = true_to_eccentric(nu, eccentricity)
     mean_anomaly = kepler_eqn(eccentric_anomaly, eccentricity)
     return mean_anomaly
-
 
 def mean_to_true_anomaly(mean_anomaly, eccentricity):
     if mean_anomaly is None:
@@ -168,11 +169,114 @@ def true_to_eccentric(nu, e):
     E = np.mod(E, 2*np.pi)
     return E
 
+def keplerian_to_eci(keplerian: KeplerianElements, mu):
+    """
+    Convert Keplerian orbital elements to position/velocity in the
+    inertial frame. Elliptic orbits only (e < 1).
+    """
+    e = keplerian.eccentricity
+    nu = keplerian.nu
+    a = keplerian.semi_major_axis
 
-# placeholders
-def keplerian_to_eci():
-    return True
+    # Eccentric anomaly, closed-form from true anomaly (no iteration needed
+    # since KeplerianElements already stores a self-consistent nu)
+    E = true_to_eccentric(nu, e)
+
+    # Perifocal-frame radius, position, velocity
+    r_c = a * (1 - e * np.cos(E))
+    h = np.sqrt(mu * a * (1 - e**2))
+
+    pos_o = r_c * np.array([np.cos(nu), np.sin(nu), 0.0])
+    vel_o = (mu / h) * np.array([-np.sin(nu), e + np.cos(nu), 0.0])
+
+    # Rotate perifocal -> inertial frame
+    dcm = RTN_to_inert_313(keplerian.raan, keplerian.inclination, keplerian.argp)
+    pos_i = dcm @ pos_o
+    vel_i = dcm @ vel_o
+
+    return pos_i, vel_i
+
+def eci_to_keplerian(r_vec, v_vec, mu):
+    """
+    Convert position/velocity in the inertial frame to Keplerian orbital
+    elements. Elliptic orbits only (0 <= e < 1); does not special-case
+    circular or equatorial orbits (RAAN/argp are undefined in those cases).
+    """
+    h_vec = np.cross(r_vec, v_vec)
+    h_norm = np.linalg.norm(h_vec)
+    if h_norm < 1e-10:
+        raise ValueError("r_vec and v_vec are parallel; orbit has zero angular momentum (not a valid closed orbit)")
+
+    r_hat = r_vec / np.linalg.norm(r_vec)
+    e_vec = (np.cross(v_vec, h_vec) / mu) - r_hat
+    e = np.linalg.norm(e_vec)
+
+    k_vec = np.array([0.0, 0.0, 1.0])
+    n_vec = np.cross(k_vec, h_vec)
+    n = np.linalg.norm(n_vec)
+    if n < 1e-10:
+        raise ValueError("Orbit is equatorial (inclination ~0); RAAN is undefined")
+
+    cos_nu = np.dot(e_vec, r_vec) / (e * np.linalg.norm(r_vec))
+    nu = math.acos(np.clip(cos_nu, -1.0, 1.0))
+    if np.dot(r_vec, v_vec) < 0:
+        nu = 2 * np.pi - nu
+
+    E = true_to_eccentric(nu, e)
+    M = kepler_eqn(E, e)
+
+    inc = np.arccos(np.clip(h_vec[2] / np.linalg.norm(h_vec), -1.0, 1.0))
+
+    raan = np.arccos(np.clip(n_vec[0] / n, -1.0, 1.0))
+    if n_vec[1] < 0:
+        raan = 2 * np.pi - raan
+
+    cos_aop = np.dot(n_vec, e_vec) / (n * np.linalg.norm(e_vec))
+    aop = np.arccos(np.clip(cos_aop, -1.0, 1.0))
+    if e_vec[2] < 0:
+        aop = 2 * np.pi - aop
+
+    a = 1 / ((2 / np.linalg.norm(r_vec)) - (np.linalg.norm(v_vec)**2 / mu))
+
+    return KeplerianElements(
+        semi_major_axis=a,
+        eccentricity=e,
+        inclination=inc,
+        raan=raan,
+        argp=aop,
+        mean_anomaly=M,   # nu gets derived automatically in the constructor
+    )
+
+def RTN_to_inert_313(RAAN, inc, aop):
+    """
+    Convert 313 Euler angles (RAAN, inc, aop) to rotation matrix. Rotates orbital frame to intertial frame. 
+
+    Parameters:
+    RAN, inc, aop : float
+        Euler angles in radians
+        RAAN : RAAN, first rotation about z-axis
+        inc: Inclination, rotation about x-axis
+        aop: AOP, second rotation about z-axis
+
+    Returns:
+    R : 3x3 numpy array
+        Rotation matrix
+    """
+    cO = np.cos(RAAN)
+    sO = np.sin(RAAN)
+    ci = np.cos(inc)
+    si = np.sin(inc)
+    cw = np.cos(aop)
+    sw = np.sin(aop)
+
+    R = np.array([
+        [cO*cw - sO*ci*sw, -cO*sw - sO*ci*cw,  sO*si],
+        [sO*cw + cO*ci*sw, -sO*sw + cO*ci*cw, -cO*si],
+        [si*sw,             si*cw,             ci]
+    ])
+    return R
 
 
-def eci_to_keplerian():
-    return True
+def inert_to_RTN_313(RAAN, inc, aop):
+    R = RTN_to_inert_313(RAAN, inc, aop).T
+    return R
