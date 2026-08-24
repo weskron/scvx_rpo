@@ -28,11 +28,13 @@ TODO: Should the trajectory history include propagation? I think no but I need t
 Each issue issue can be copied into a new github issue. 
 
 ### Epic A — Core State Classes
-- [ ] A1. Define SpacecraftState — fields, constructors (Keplerian / ECEF)
-- [ ] A2. Keplerian ↔ ECI/ECEF conversion + round-trip tests
-- [ ] A3. Nonlinear 6-DOF relative motion propagation in ECEF
-- [ ] A4. TrajectoryHistory class — efficient storage + inherits state
-- [ ] A5. Plotting methods on TrajectoryHistory
+- [ ] A1. Define `SpacecraftState` — fields, constructors (Keplerian / ECEF), derived properties (orbital radius, specific angular momentum)
+- [ ] A2. Keplerian to ECEF conversion + round-trip tests
+- [ ] A3a. Target absolute propagation (two-body/perturbed dynamics, ECEF)
+- [ ] A3b. Chaser nonlinear relative motion propagation (couples to target's instantaneous radius/rotation rate from A3a)
+- [ ] A4. `RelativeState` class + absolute↔relative conversion functions (TODO: attitude included or translational-only — pending decision)
+- [ ] A5. `TrajectoryHistory` class — efficient storage + inherits state
+- [ ] A6. Plotting methods on `TrajectoryHistory`
 
 ### Epic B — Reference Trajectory Generation
 - [ ] B1. Define reference trajectory generator interface
